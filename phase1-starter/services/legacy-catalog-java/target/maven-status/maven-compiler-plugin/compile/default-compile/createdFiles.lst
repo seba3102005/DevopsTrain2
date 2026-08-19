@@ -1,0 +1,5 @@
+com\campus\catalog\CatalogApplication.class
+com\campus\catalog\CatalogController.class
+com\campus\catalog\CatalogRepository.class
+com\campus\catalog\CatalogEvent.class
+com\campus\catalog\CatalogApplication$1.class
