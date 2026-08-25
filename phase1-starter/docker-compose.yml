@@ -1,0 +1,237 @@
+﻿services:
+  mysql:
+    image: mysql:8.4
+    container_name: mysql
+    network_mode: host
+    environment:
+      MYSQL_ROOT_PASSWORD: password123
+      MYSQL_DATABASE: eventhub_catalog
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-ppassword123", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    network_mode: host
+    environment:
+      POSTGRES_USER: eventhub
+      POSTGRES_PASSWORD: eventhub
+      POSTGRES_DB: eventhub_auth
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "eventhub"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  mongo:
+    image: mongo:7
+    container_name: mongo
+    network_mode: host
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ping:1}).ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    network_mode: host
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    network_mode: host
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  catalog:
+    build:
+      context: ./services/legacy-catalog-java
+      dockerfile: Containerfile
+    container_name: catalog
+    network_mode: host
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/eventhub_catalog
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: password123
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  auth:
+    build:
+      context: ./services/auth-service-node
+      dockerfile: Containerfile
+    container_name: auth
+    network_mode: host
+    environment:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: eventhub
+      PGPASSWORD: eventhub
+      PGDATABASE: eventhub_auth
+      JWT_SECRET: change-me-in-every-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  ai-insight:
+    build:
+      context: ./services/ai-insight-service-python
+      dockerfile: Containerfile
+    container_name: ai-insight
+    network_mode: host
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  booking:
+    build:
+      context: ./services/booking-service-python
+      dockerfile: Containerfile
+    container_name: booking
+    network_mode: host
+    environment:
+      MONGO_URI: mongodb://127.0.0.1:27017
+      MONGO_DB: eventhub_bookings
+      RABBITMQ_URL: amqp://guest:guest@127.0.0.1:5672/
+      RABBITMQ_QUEUE: bookings
+      AI_INSIGHT_URL: http://127.0.0.1:8084
+    depends_on:
+      mongo:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      ai-insight:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  notification:
+    build:
+      context: ./services/notification-worker-go
+      dockerfile: Containerfile
+    container_name: notification
+    network_mode: host
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@127.0.0.1:5672/
+      RABBITMQ_QUEUE: bookings
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+  
+  analytics:
+    build:
+      context: ./services/analytics-service-python
+      dockerfile: Containerfile
+    container_name: analytics
+    network_mode: host
+    environment:
+      REDIS_URL: redis://127.0.0.1:6379/0
+      BOOKING_SERVICE_URL: http://127.0.0.1:8083
+      CATALOG_SERVICE_URL: http://127.0.0.1:8081
+      SNAPSHOT_KEY: analytics:snapshot
+    depends_on:
+      redis:
+        condition: service_healthy
+      booking:
+        condition: service_healthy
+      catalog:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Containerfile
+    container_name: frontend
+    network_mode: host
+    depends_on:
+      catalog:
+        condition: service_healthy
+      auth:
+        condition: service_healthy
+      booking:
+        condition: service_healthy
+
+  
+  analytics-job:
+    build:
+      context: ./services/analytics-service-python
+      dockerfile: Containerfile
+    container_name: analytics-job
+    network_mode: host
+    environment:
+      REDIS_URL: redis://127.0.0.1:6379/0
+      BOOKING_SERVICE_URL: http://127.0.0.1:8083
+      CATALOG_SERVICE_URL: http://127.0.0.1:8081
+      SNAPSHOT_KEY: analytics:snapshot
+    command: ["python", "job.py"]
+    depends_on:
+      booking:
+        condition: service_healthy
+      catalog:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles: ["job"]
+
+volumes:
+  mysql-data:
+  postgres-data:
+  mongo-data:
+  redis-data:
+  rabbitmq-data:
