@@ -22,7 +22,7 @@ spec:
     git:
       uri: https://github.com/seba3102005/DevopsTrain2.git
       ref: main
-    contextDir: services/legacy-catalog-java
+    contextDir: phase1-starter/services/legacy-catalog-java
   strategy:
     type: Docker
     dockerStrategy:
@@ -50,7 +50,7 @@ spec:
     git:
       uri: https://github.com/seba3102005/DevopsTrain2.git
       ref: main
-    contextDir: services/auth-service-node
+    contextDir: phase1-starter/services/auth-service-node
   strategy:
     type: Docker
     dockerStrategy:
@@ -78,7 +78,7 @@ spec:
     git:
       uri: https://github.com/seba3102005/DevopsTrain2.git
       ref: main
-    contextDir: services/booking-service-python
+    contextDir: phase1-starter/services/booking-service-python
   strategy:
     type: Docker
     dockerStrategy:
@@ -106,7 +106,7 @@ spec:
     git:
       uri: https://github.com/seba3102005/DevopsTrain2.git
       ref: main
-    contextDir: services/ai-insight-service-python
+    contextDir: phase1-starter/services/ai-insight-service-python
   strategy:
     type: Docker
     dockerStrategy:
@@ -134,7 +134,7 @@ spec:
     git:
       uri: https://github.com/seba3102005/DevopsTrain2.git
       ref: main
-    contextDir: services/analytics-service-python
+    contextDir: phase1-starter/services/analytics-service-python
   strategy:
     type: Docker
     dockerStrategy:
@@ -162,7 +162,7 @@ spec:
     git:
       uri: https://github.com/seba3102005/DevopsTrain2.git
       ref: main
-    contextDir: services/notification-worker-go
+    contextDir: phase1-starter/services/notification-worker-go
   strategy:
     type: Docker
     dockerStrategy:
@@ -190,7 +190,7 @@ spec:
     git:
       uri: https://github.com/seba3102005/DevopsTrain2.git
       ref: main
-    contextDir: frontend
+    contextDir: phase1-starter/frontend
   strategy:
     type: Docker
     dockerStrategy:
