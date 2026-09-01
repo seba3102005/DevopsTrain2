@@ -15,14 +15,15 @@ spec:
       containers:
         - name: catalog
           image: image-registry.openshift-image-registry.svc:5000/sebaibraheem-dev/catalog:latest
+          imagePullPolicy: Always
           ports: [{ containerPort: 8081 }]
           env:
             - { name: SPRING_DATASOURCE_URL, value: "jdbc:mysql://mysql:3306/eventhub_catalog" }
             - { name: SPRING_DATASOURCE_USERNAME, value: "root" }
             - { name: SPRING_DATASOURCE_PASSWORD, value: "password123" }
           resources:
-            requests: { cpu: 100m, memory: 256Mi }
-            limits: { cpu: 500m, memory: 512Mi }
+            requests: { cpu: 300m, memory: 512Mi }
+            limits: { cpu: 1000m, memory: 1Gi }
           readinessProbe:
             httpGet: { path: /health, port: 8081 }
             initialDelaySeconds: 30
@@ -62,6 +63,7 @@ spec:
       containers:
         - name: auth
           image: image-registry.openshift-image-registry.svc:5000/sebaibraheem-dev/auth:latest
+          imagePullPolicy: Always
           ports: [{ containerPort: 8082 }]
           env:
             - { name: PORT, value: "8082" }
@@ -113,6 +115,7 @@ spec:
       containers:
         - name: ai-insight
           image: image-registry.openshift-image-registry.svc:5000/sebaibraheem-dev/ai-insight:latest
+          imagePullPolicy: Always
           ports: [{ containerPort: 8084 }]
           env:
             - { name: PORT, value: "8084" }
@@ -158,6 +161,7 @@ spec:
       containers:
         - name: booking
           image: image-registry.openshift-image-registry.svc:5000/sebaibraheem-dev/booking:latest
+          imagePullPolicy: Always
           ports: [{ containerPort: 8083 }]
           env:
             - { name: PORT, value: "8083" }
@@ -208,6 +212,7 @@ spec:
       containers:
         - name: notification
           image: image-registry.openshift-image-registry.svc:5000/sebaibraheem-dev/notification:latest
+          imagePullPolicy: Always
           env:
             - { name: RABBITMQ_URL, value: "amqp://guest:guest@rabbitmq:5672/" }
             - { name: RABBITMQ_QUEUE, value: "bookings" }
@@ -234,6 +239,7 @@ spec:
       containers:
         - name: analytics
           image: image-registry.openshift-image-registry.svc:5000/sebaibraheem-dev/analytics:latest
+          imagePullPolicy: Always
           ports: [{ containerPort: 8085 }]
           env:
             - { name: PORT, value: "8085" }
@@ -283,6 +289,7 @@ spec:
       containers:
         - name: frontend
           image: image-registry.openshift-image-registry.svc:5000/sebaibraheem-dev/frontend:latest
+          imagePullPolicy: Always
           ports: [{ containerPort: 3000 }]
           resources:
             requests: { cpu: 50m, memory: 64Mi }

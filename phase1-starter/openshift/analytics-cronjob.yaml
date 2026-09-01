@@ -1,0 +1,29 @@
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: analytics-job
+spec:
+  schedule: "*/2 * * * *"   
+  concurrencyPolicy: Forbid 
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: analytics-job
+              image: image-registry.openshift-image-registry.svc:5000/sebaibraheem-dev/analytics:latest
+              imagePullPolicy: Always
+              command: ["python", "job.py"]
+              env:
+                - { name: REDIS_URL, value: "redis://redis:6379/0" }
+                - { name: BOOKING_SERVICE_URL, value: "http://booking:8083" }
+                - { name: CATALOG_SERVICE_URL, value: "http://catalog:8081" }
+                - { name: SNAPSHOT_KEY, value: "analytics:snapshot" }
+              resources:
+                requests: { cpu: 100m, memory: 128Mi }
+                limits: { cpu: 300m, memory: 256Mi }
